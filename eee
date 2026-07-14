@@ -5092,6 +5092,7 @@ function library:Load(options)
     return window_types
 end
 
+local window = library:Load{}
 
 utility.format(library, true)
 
