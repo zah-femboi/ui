@@ -5093,7 +5093,6 @@ function library:Load(options)
 end
 
 
-local window = library:Load{}
 local runService = game:GetService("RunService")
 
 --[[
@@ -5105,8 +5104,6 @@ runService.Heartbeat:Connect(function(dt)
 end)
 
 
-
-window:SettingsTab()
 
 library:Init()
 
