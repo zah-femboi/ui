@@ -3225,7 +3225,7 @@ function library:Loader(options)
     utility.format(options);
 
     utility.defaults(options, {
-        title = "NexoHub",
+        title = "zahware",
         description = "Loading...",
         percentage = 50,
         date = "25/04/26",
@@ -4116,10 +4116,10 @@ function library:Load(options)
     utility.format(options)
 
     utility.defaults(options, {
-        title = options.name or "nexohub",
+        title = options.name or "zahware",
         theme = "Default",
         overrides = {},
-        folder = "nexohub",
+        folder = "zahware",
         extension = "json",
         game = "delta",
         tweenspeed = options.animspeed or 0.1,
@@ -5093,20 +5093,16 @@ function library:Load(options)
 end
 
 
-local runService = game:GetService("RunService")
-
---[[
-local watermark = library:Watermark("zahware | " .. "currentFps" .. " FPS")
-]]
-
-runService.Heartbeat:Connect(function(dt)
-	currentFps = math.floor(1 / runService.Heartbeat:Wait())
-end)
-
-
+local window = library:Load{}
 
 library:Init()
 
 utility.format(library, true)
 
 return library
+
+
+
+
+
+
