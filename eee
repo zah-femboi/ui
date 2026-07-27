@@ -1577,7 +1577,18 @@ function components.slider(holder, options, zindex)
     local current_tween
 
     local function set(value)
-        value = clamp(utility.round(tonumber(value), options.float), options.min, options.max)
+			
+		local num = tonumber(value) or options.min
+
+		if options.float and options.float ~= 1 then
+			num = math.round(num / options.float) * options.float
+		else
+			num = math.round(num)
+		end
+
+		value = clamp(num, options.min, options.max)
+
+
         value_text.Text = utility.tostring(value) .. options.suffix
 
         if value ~= current_value then
@@ -3221,265 +3232,6 @@ function library:DeleteTheme(name)
     end
 end
 
-function library:Loader(options)
-    utility.format(options);
-
-    utility.defaults(options, {
-        title = "zahware",
-        description = "Loading...",
-        percentage = 50,
-        date = "25/04/26",
-        added = {},
-        changed = {},
-        removed = {},
-        callback = function() end,
-    });
-
-    local sizeX = 310;
-    local sizeY = 123;
-
-    local window = Render:Create("Square", {
-        Size = newUDim2(0, sizeX, 0, 22),
-        Position = utility.center(sizeX, sizeY),
-        ZIndex = 140,
-        Outline = false,
-        Visible = true,
-        Transparency = 0
-    });
-
-    window:Create("Text", {
-        Text = options.title,
-        Font = self.font,
-        Size = self.font_size,
-        Position = newUDim2(0, 6, 0, 4),
-        Theme = "Text",
-        ZIndex = 124
-    });
-
-    local main = window:Create("Square", {
-        Size = newUDim2(1, 0, 0, sizeY),
-        ZIndex = 123,
-        Theme = "Window Background",
-        Outline = false
-    });
-
-    main:Create("Square", {
-        Size = newUDim2(1, 2, 1, 2),
-        Position = newUDim2(0, -1, 0, -1),
-        Theme = "Window Border",
-        ZIndex = 122,
-        OutlineTheme = "Black Border"
-    });
-
-    local background = main:Create("Square", {
-        Size = newUDim2(1, 0, 1, -22),
-        Position = newUDim2(0, 0, 0, 22),
-        ZIndex = 125,
-        Theme = "Tab Background",
-        OutlineTheme = "Tab Border"
-    });
-
-    local holder = background:Create("Square", {
-        Size = newUDim2(1, -12, 1, -12),
-        Position = newUDim2(0, 6, 0, 6),
-        Transparency = 0,
-        Visible = true,
-        Outline = false
-    });
-
-    local change_log = holder:Create("Square", {
-        Visible = false,
-        Size = newUDim2(1, 0, 0, 0),
-        Position = newUDim2(0, 0, 0, 97),
-        ZIndex = 128,
-        Theme = "Tab Background",
-        Outline = false
-    });
-
-    change_log:Create("Square", {
-        Size = newUDim2(1, 2, 1, 2),
-        Position = newUDim2(0, -1, 0, -1),
-        Theme = "Tab Border",
-        ZIndex = 127,
-        OutlineTheme = "Black Border"
-    });
-
-    change_log:Create("Text", {
-        Text = "Changelog - Last Update: " .. options.date,
-        Font = self.font,
-        Size = self.font_size,
-        Position = newUDim2(0, 6, 0, 4),
-        Theme = "Text",
-        ZIndex = 129
-    });
-
-    local bound_addition = 0;
-
-    for _, text in next, options.added do
-        bound_addition += change_log:Create("Text", {
-            Text = "+ " .. text,
-            Font = self.font,
-            Size = self.font_size,
-            Position = newUDim2(0, 6, 0, 20 + bound_addition),
-            Color = newColor3(0.46, 1, 0.69),
-            ZIndex = 129
-        }).TextBounds.Y;
-    end
-
-    for _, text in next, options.changed do
-        bound_addition += change_log:Create("Text", {
-            Text = "* " .. text,
-            Font = self.font,
-            Size = self.font_size,
-            Position = newUDim2(0, 6, 0, 20 + bound_addition),
-            Theme = "Disabled Text",
-            ZIndex = 129
-        }).TextBounds.Y;
-    end
-
-    for _, text in next, options.removed do
-        bound_addition += change_log:Create("Text", {
-            Text = "- " .. text,
-            Font = self.font,
-            Size = self.font_size,
-            Position = newUDim2(0, 6, 0, 20 + bound_addition),
-            Color = newColor3(1, 0.258823, 0.258823),
-            ZIndex = 129
-        }).TextBounds.Y;
-    end
-
-    change_log.Size = newUDim2(1, 0, 0, bound_addition + 26);
-
-    local textbounds = utility.text_length(options.description, self.font, self.font_size);
-
-    local description_text = holder:Create("Text", {
-        Text = options.description,
-        Font = self.font,
-        Size = self.font_size,
-        Position = newUDim2(0.5, -textbounds.X * 0.5, 0, 2.5),
-        Theme = "Text",
-        ZIndex = 126
-    });
-
-    local slider = holder:Create("Square", {
-        Size = newUDim2(1, 0, 0, 10),
-        Position = newUDim2(0, 0, 0, 25),
-        ZIndex = 126,
-        Theme = "Object Background",
-        OutlineTheme = "Object Border"
-    });
-
-    local fill = slider:Create("Square", {
-        Size = newUDim2(options.percentage * 0.01, 0, 1, 0),
-        ZIndex = 127,
-        Ignored = true,
-        Theme = "Accent",
-        Outline = false
-    });
-
-    fill:Create("Image", {
-        Size = newUDim2(1, 0, 1, 0),
-        Transparency = 0.5,
-        ZIndex = 128,
-        Data = decode("iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABuSURBVChTxY9BDoAgDASLGD2ReOYNPsR/+BAfroI7hibe9OYmky2wbUPIOdsXdc1f9WMwppQm+SDGBnUvomAQBH49qzhFEag25869ElzaIXDhD4JGbyoEVxUedN8FKwnfmwhucgKICc+pNB1mZhdCdhsa2ky0FAAAAABJRU5ErkJggg==")
-    })
-
-    local load = holder:Create("Square", {
-        Position = newUDim2(0, 0, 0, 42),
-        Size = newUDim2(0.5, -4, 0, 20),
-        ZIndex = 126,
-        Theme = "Object Background",
-        OutlineTheme = "Object Border"
-    });
-
-    utility.auto_button_color(load, "Object Background", fromRGB(3, 3, 3), fromRGB(8, 8, 8))
-
-    load:Create("Text", {
-        Text = "Load",
-        Font = self.font,
-        Size = self.font_size,
-        Position = newUDim2(0.5, 0, 0, 3),
-        Theme = "Text",
-        Center = true,
-        ZIndex = 127
-    });
-
-    local close = holder:Create("Square", {
-        Position = newUDim2(0.5, 4, 0, 42),
-        Size = newUDim2(0.5, -4, 0, 20),
-        ZIndex = 126,
-        Theme = "Object Background",
-        OutlineTheme = "Object Border"
-    });
-
-    utility.auto_button_color(close, "Object Background", fromRGB(3, 3, 3), fromRGB(8, 8, 8))
-
-    close:Create("Text", {
-        Text = "Close",
-        Font = self.font,
-        Size = self.font_size,
-        Position = newUDim2(0.5, 0, 0, 3),
-        Theme = "Text",
-        Center = true,
-        ZIndex = 127
-    });
-
-    local changelog = holder:Create("Square", {
-        Position = newUDim2(0, 0, 0, 69),
-        Size = newUDim2(1, 0, 0, 20),
-        ZIndex = 126,
-        Theme = "Object Background",
-        OutlineTheme = "Object Border"
-    });
-
-    utility.auto_button_color(changelog, "Object Background", fromRGB(3, 3, 3), fromRGB(8, 8, 8))
-
-    changelog:Create("Text", {
-        Text = "Changelog",
-        Font = self.font,
-        Size = self.font_size,
-        Position = newUDim2(0.5, 0, 0, 3),
-        Theme = "Text",
-        Center = true,
-        ZIndex = 127
-    });
-
-    local function resize()
-        main.Size = newUDim2(1, 0, 0, sizeY + (change_log.Visible and 34 + bound_addition or 0));
-        window.Position = utility.center(window.AbsoluteSize.X, main.AbsoluteSize.Y);
-    end
-
-    load.MouseButton1Click:Connect(options.callback);
-
-    changelog.MouseButton1Click:Connect(function()
-        change_log.Visible = not change_log.Visible;
-        resize();
-    end);
-
-    resize();
-
-    local loader_types = {};
-
-    function loader_types:Set(description, percentage)
-        local textbounds = utility.text_length(description, library.font, library.font_size);
-        description_text.Text = description;
-        description_text.Position = newUDim2(0.5, -textbounds.X * 0.5, 0, 2.5);
-
-        fill.Size = newUDim2(percentage * 0.01, 0, 1, 0);
-    end
-
-    function loader_types:Close()
-        window:Destroy();
-    end
-
-    close.MouseButton1Click:Connect(function()
-        loader_types:Close();
-    end);
-
-    utility.format(loader_types, true);
-    return loader_types;
-end
-
 local left = library.notification_x == "left"
 local top = library.notification_y == "top"
 
@@ -3678,10 +3430,10 @@ function library:Watermark(str)
     return watermark_types
 end
 ]]
+
 function library:List(options)
     return components.list(options)
 end
-
 
 function library:Window(options)
     utility.format(options);
@@ -3785,7 +3537,7 @@ function library:Window(options)
     local window_types = {Visible = options.visible, tab = holder, tab_buttons = {}, text_bounds = 0, double_columns = options.doublecolumns, left_column = left_column};
     self.windows[window] = window_types;
 
-    --[[function window_types:SubTab(name)
+    function window_types:SubTab(name)
         self.has_subtabs = true
         local first = #self.tab:GetChildren() == 2
 
@@ -3854,7 +3606,7 @@ function library:Window(options)
         column_types.left_column = left_column
 
         return column_types
-    end]]
+    end
 
     function window_types:Section(options)
         if self.has_subtabs then return end
@@ -4116,12 +3868,12 @@ function library:Load(options)
     utility.format(options)
 
     utility.defaults(options, {
-        title = options.name or "zahware",
+        title = options.name or "dolphus",
         theme = "Default",
         overrides = {},
-        folder = "zahware",
+        folder = "dolphus",
         extension = "json",
-        game = "delta",
+        game = "",
         tweenspeed = options.animspeed or 0.1,
         easingstyle = Enum.EasingStyle.Linear,
         togglespeed = 0.2,
@@ -4134,7 +3886,7 @@ function library:Load(options)
         keybindlist = true,
         font = worldtoscreen ~= nil and "system" or "plex",
         fontsize = 13,
-        discord = "https://discord.gg/PAx5pxbKwY",
+        discord = "e",
         sizex = 700,
         sizey = 550
     })
@@ -4990,21 +4742,6 @@ function library:Load(options)
             end
         }
 
-        misc:Keybind{
-            name = "Panic Key",
-            default = Enum.KeyCode.End,
-            blacklist = {Enum.UserInputType.MouseButton1, Enum.UserInputType.MouseButton2, Enum.UserInputType.MouseButton3},
-            flag = "panic_key",
-            listignored = true,
-            callback = function(_, from_setting)
-                if not from_setting then
-                    (unload or function()
-                        library:Unload();
-                    end)();
-                end
-            end
-        }
-
         misc:Slider{
             name = "Tween Speed",
             default = library.tween_speed,
@@ -5026,16 +4763,17 @@ function library:Load(options)
                 library.toggle_speed = value;
             end
         }
-
-        misc:Dropdown{
-            name = "Easing Style",
-            default = tostring(library.easing_style):gsub("Enum.EasingStyle.", ""),
-            content = {"Linear", "Sine", "Back", "Quad", "Quart", "Quint", "Bounce", "Elastic", "Exponential", "Circular", "Cubic"},
-            flag = "easing_style",
-            callback = function(style)
-                library.easing_style = Enum.EasingStyle[style]
-            end
-        }
+		
+		misc:Dropdown{
+			name = "Easing Style",
+			default = tostring(library.easing_style):gsub("Enum.EasingStyle.", ""),
+			content = {"Linear", "Sine", "Back", "Quad", "Quart", "Quint", "Bounce", "Elastic", "Exponential", "Circular", "Cubic"},
+			flag = "easing_style",
+			callback = function(style)
+				style = style or "Linear"
+				library.easing_style = Enum.EasingStyle[style]
+			end
+		}
 
         misc:Button{
             name = "Unload",
@@ -5043,22 +4781,13 @@ function library:Load(options)
                 library:Unload();
             end
         }
-
         misc:Button{
-            name = "Copy Game Invite (CONSOLE)",
-            callback = function()
-                setclipboard(('Roblox.GameLauncher.joinGameInstance(%s, "%s")'):format(game.PlaceId, game.JobId))
-            end
-        }
-
-        misc:Button{
-            name = "Copy Game Invite (LUA)",
+            name = "Copy Game Invite)",
             callback = function()
                 setclipboard(('game:GetService("TeleportService"):TeleportToPlaceInstance(%s, "%s")'):format(game.PlaceId, game.JobId))
             end
         }
 
-        
         misc:Button{
             name = "Join Discord Server",
             callback = function()
@@ -5092,14 +4821,7 @@ function library:Load(options)
     return window_types
 end
 
-local window = library:Load{}
+
 
 utility.format(library, true)
-
 return library
-
-
-
-
-
-
