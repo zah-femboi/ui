@@ -3885,7 +3885,7 @@ end
 function library:Load(options)
     utility.format(options)
 
-    utility.defaults(options, getgenv().LibrarySettings or {
+    local settings = {
         title = options.name or "dolphus",
         theme = "Default",
         overrides = {},
@@ -3907,9 +3907,17 @@ function library:Load(options)
         discord = "e",
         sizex = 700,
         sizey = 550
-    })
+    }
 
-    options.font = options.font:lower()
+    if getgenv().LibrarySettings then
+        for i,v in pairs(getgenv().LibrarySettings) do
+            settings[i] = v
+        end
+    end
+
+    utility.defaults(options, settings)
+
+    options.font = tostring(options.font):lower()
 
     self.font_size = options.fontsize
     self.font = Render.Fonts[options.font:lower():gsub("^%l", upper)]
@@ -4493,7 +4501,7 @@ function library:Load(options)
     utility.format(window_types, true)
     return window_types
 end
-
+--//
 
 utility.format(library, true)
 return library
