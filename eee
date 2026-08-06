@@ -1357,33 +1357,49 @@ function components.toggle(holder, options, zindex)
 
         holder.toggled = not holder.toggled
 
+        local keybind_theme = options.risky and "Risky Text" or "Accent"
+        local disabled_keybind_theme = options.risky and "Risky Text" or "Disabled Text"
+
         if not holder.toggled then
             if holder.keybind and holder.keybind_mode ~= "hold" and library.keybind_list:Exists(holder.name) then
-                library.keybind_list:ChangeObjectTheme(holder.name, "Disabled Text")
+                library.keybind_list:ChangeObjectTheme(holder.name, disabled_keybind_theme)
             end
 
-            if holder.keybind_mode == "hold" and holder.key and library.keybind_list:Exists(holder.name) then
+            if holder.keybind and holder.keybind_mode == "hold" and holder.key and library.keybind_list:Exists(holder.name) then
                 library.keybind_list:Remove(holder.name)
             end
 
-            disconnect_auto_color = utility.auto_button_color(icon, "Object Background", fromRGB(3, 3, 3), fromRGB(8, 8, 8), holder.main)
+            disconnect_auto_color = utility.auto_button_color(
+                icon,
+                "Object Background",
+                fromRGB(3, 3, 3),
+                fromRGB(8, 8, 8),
+                holder.main
+            )
         else
             if holder.keybind and holder.keybind_mode ~= "hold" and library.keybind_list:Exists(holder.name) then
-                library.keybind_list:ChangeObjectTheme(holder.name, "Accent")
+                library.keybind_list:ChangeObjectTheme(holder.name, keybind_theme)
             end
 
-            if holder.keybind_mode == "hold" and holder.key then
+            if holder.keybind and holder.keybind_mode == "hold" and holder.key then
                 if not library.keybind_list:Exists(holder.name) then
-                    library.keybind_list:Add(holder.name, "Disabled Text")
+                    library.keybind_list:Add(holder.name, disabled_keybind_theme)
                 end
 
                 library.keybind_list:Change(holder.name, ("[%s] %s"):format(holder.key_str, holder.name))
+
+                if options.risky then
+                    library.keybind_list:ChangeObjectTheme(holder.name, "Risky Text")
+                end
             end
 
             disconnect_auto_color()
         end
 
-        current_tween = library:ChangeThemeObject(icon, holder.toggled and "Accent" or "Object Background")
+        current_tween = library:ChangeThemeObject(
+            icon,
+            holder.toggled and "Accent" or "Object Background"
+        )
 
         library.flags[options.flag] = holder.toggled
         options.callback(holder.toggled)
@@ -4510,6 +4526,6 @@ function library:Load(options)
     return window_types
 end
 
-//--
+-- koik
 utility.format(library, true)
 return library
