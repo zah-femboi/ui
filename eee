@@ -1709,224 +1709,216 @@ for _, enum in next, Enum.KeyCode:GetEnumItems() do
 end
 
 function components.keybind(holder, options, zindex)
-    zindex = zindex or 11
+	zindex = zindex or 11
+	utility.format(options)
+	utility.defaults(options, {
+		ignored = options.noconfig or options.ignoreconfig or options.configignore or false,
+		listignored = options.listignore or options.ignorelist or options.nolist or false,
+		mode = "normal",
+		blacklist = {},
+		risky = holder.risky or false,
+		flag = utility.new_flag(),
+		callback = function() end
+	})
 
-    utility.format(options)
+	local enabled_theme = options.risky and "Risky Text" or "Accent"
+	local disabled_theme = options.risky and "Risky Text" or "Disabled Text"
 
-    utility.defaults(options, {
-        ignored = options.noconfig or options.ignoreconfig or options.configignore or false,
-        listignored = options.listignore or options.ignorelist or options.nolist or false,
-        mode = "normal",
-        blacklist = {},
-        risky = holder.risky or false,
-        flag = utility.new_flag(),
-        callback = function() end
-    })
+	holder.name = options.listname or holder.name
 
-    local enabled_theme = options.risky and "Risky Text" or "Accent"
-    local disabled_theme = options.risky and "Risky Text" or "Disabled Text"
+	-- NEW: single source of truth for what shows up in the keybind list
+	local list_name = options.risky and (holder.name .. " -- Risky") or holder.name
 
-    holder.name = options.listname or holder.name
-    options.mode = options.mode:lower()
+	options.mode = options.mode:lower()
 
-    local old = clone(options.blacklist)
-    options.blacklist = {}
+	local old = clone(options.blacklist)
+	options.blacklist = {}
+	for key, _ in next, blacklisted_keys do
+		options.blacklist[key] = true
+	end
+	for _, key in next, old do
+		options.blacklist[key] = true
+	end
 
-    for key, _ in next, blacklisted_keys do
-        options.blacklist[key] = true
-    end
+	if options.tooltip then
+		components.tooltip(holder.main, options.tooltip)
+	end
 
-    for _, key in next, old do
-        options.blacklist[key] = true
-    end
+	if not options.listignored and holder.toggle and options.mode ~= "hold" then
+		-- CHANGED: was holder.name
+		library.keybind_list:Add(
+			list_name,
+			holder.toggled and enabled_theme or disabled_theme
+		)
+	end
 
-    if options.tooltip then
-        components.tooltip(holder.main, options.tooltip)
-    end
-    
-    if not options.listignored and holder.toggle and options.mode ~= "hold" then
-        library.keybind_list:Add(
-            holder.name,
-            holder.toggled and enabled_theme or disabled_theme
-        )
-    end
+	local keybind = holder.main:Create("Square", {
+		Size = newUDim2(0, 0, 0, 13),
+		Position = newUDim2(1, 0, 0, 0),
+		ZIndex = zindex,
+		Theme = "Object Background",
+		OutlineTheme = "Object Border"
+	})
 
-    local keybind = holder.main:Create("Square", {
-        Size = newUDim2(0, 0, 0, 13),
-        Position = newUDim2(1, 0, 0, 0),
-        ZIndex = zindex,
-        Theme = "Object Background",
-        OutlineTheme = "Object Border"
-    })
+	holder.keybind = keybind
+	holder.keybind_mode = options.mode
 
-    holder.keybind = keybind
-    holder.keybind_mode = options.mode
+	utility.auto_button_color(keybind, "Object Background", fromRGB(3, 3, 3), fromRGB(8, 8, 8))
 
-    utility.auto_button_color(keybind, "Object Background", fromRGB(3, 3, 3), fromRGB(8, 8, 8))
+	local value = keybind:Create("Text", {
+		Text = "",
+		Font = library.font,
+		Size = library.font_size,
+		Position = newUDim2(0.5, 0, 0, 0),
+		Theme = "Disabled Text",
+		Center = true,
+		ZIndex = zindex + 1
+	})
 
-    local value = keybind:Create("Text", {
-        Text = "",
-        Font = library.font,
-        Size = library.font_size,
-        Position = newUDim2(0.5, 0, 0, 0),
-        Theme = "Disabled Text",
-        Center = true,
-        ZIndex = zindex + 1
-    })
+	local function set(key)
+		if typeof(key) == "string" then
+			if key:find("KEY") then
+				key = Enum.KeyCode[key:gsub("KEY_", "")]
+			elseif key:find("INPUT") then
+				key = Enum.UserInputType[key:gsub("INPUT_", "")]
+			end
+		end
 
-    local function set(key)
-        if typeof(key) == "string" then
-            if key:find("KEY") then
-                key = Enum.KeyCode[key:gsub("KEY_", "")]
-            elseif key:find("INPUT") then
-                key = Enum.UserInputType[key:gsub("INPUT_", "")]
-            end
-        end
+		if options.blacklist[key] then
+			key = nil
+		end
 
-        if options.blacklist[key] then
-            key = nil
-        end
+		if key and enums[key] and (keys[key] or services.UserInputService:GetStringForKeyCode(key) ~= "") then
+			local key_str = keys[key] or services.UserInputService:GetStringForKeyCode(key)
+			holder.key_str = key_str
 
-        if key and enums[key] and (keys[key] or services.UserInputService:GetStringForKeyCode(key) ~= "") then
-            local key_str = keys[key] or services.UserInputService:GetStringForKeyCode(key)
-            holder.key_str = key_str
+			if not options.listignored then
+				if not library.keybind_list:Exists(list_name) then -- CHANGED
+					if options.mode == "hold" then
+						if not holder.toggle or holder.toggled then
+							library.keybind_list:Add(list_name, disabled_theme) -- CHANGED
+						end
+					else
+						library.keybind_list:Add(list_name, enabled_theme) -- CHANGED
+					end
+				end
 
-            if not options.listignored then
-                if not library.keybind_list:Exists(holder.name) then
-                    if options.mode == "hold" then
-                        if not holder.toggle or holder.toggled then
-                            library.keybind_list:Add(holder.name, disabled_theme)
-                        end
-                    else
-                        library.keybind_list:Add(holder.name, enabled_theme)
-                    end
-                end
+				if library.keybind_list:Exists(list_name) then -- CHANGED
+					library.keybind_list:Change(
+						list_name, -- CHANGED
+						("[%s] %s"):format(key_str, list_name) -- CHANGED
+					)
+				end
+			end
 
-                if library.keybind_list:Exists(holder.name) then
-                    library.keybind_list:Change(
-                        holder.name,
-                        ("[%s] %s"):format(key_str, holder.name)
-                    )
-                end
-            end
+			library:ChangeThemeObject(value, "Text")
+			value.Text = key_str
+			keybind.Size = newUDim2(0, value.TextBounds.X + 25, 0, 13)
+			keybind.Position = newUDim2(1, -(value.TextBounds.X + 25), 0, 0)
 
-            library:ChangeThemeObject(value, options.risky and "Risky Text" or "Text")
+			if holder.plus and holder.minus then
+				holder.plus.Position = newUDim2(1, -(13 + keybind.AbsoluteSize.X), 0, 0)
+				holder.minus.Position = newUDim2(1, -(29 + keybind.AbsoluteSize.X), 0, 0)
+			end
 
-            value.Text = key_str
+			holder.key = key
+			library.flags[options.flag .. "_holding"] = false
+			library.flags[options.flag] = key
+			options.callback(key, true)
+		else
+			holder.key_str = "NONE"
 
-            keybind.Size = newUDim2(0, value.TextBounds.X + 25, 0, 13)
-            keybind.Position = newUDim2(1, -(value.TextBounds.X + 25), 0, 0)
+			if not options.listignored and library.keybind_list:Exists(list_name) then -- CHANGED
+				library.keybind_list:Remove(list_name) -- CHANGED
+			end
 
-            if holder.plus and holder.minus then
-                holder.plus.Position = newUDim2(1, -(13 + keybind.AbsoluteSize.X), 0, 0)
-                holder.minus.Position = newUDim2(1, -(29 + keybind.AbsoluteSize.X), 0, 0)
-            end
+			library:ChangeThemeObject(value, "Disabled Text")
+			value.Text = "NONE"
+			keybind.Size = newUDim2(0, 53, 0, 13)
+			keybind.Position = newUDim2(1, -53, 0, 0)
 
-            holder.key = key
+			if holder.plus and holder.minus then
+				holder.plus.Position = newUDim2(1, -(13 + keybind.AbsoluteSize.X), 0, 0)
+				holder.minus.Position = newUDim2(1, -(29 + keybind.AbsoluteSize.X), 0, 0)
+			end
 
-            library.flags[options.flag .. "_holding"] = false
-            library.flags[options.flag] = key
-            options.callback(key, true)
+			holder.key = nil
+			library.flags[options.flag .. "_holding"] = true
+			library.flags[options.flag] = nil
+			options.callback(nil, true)
+		end
+	end
 
-        else
-            holder.key_str = "NONE"
+	set(options.default)
 
-            if not options.listignored and library.keybind_list:Exists(holder.name) then
-                library.keybind_list:Remove(holder.name)
-            end
+	local binding
+	keybind.MouseButton1Click:Connect(function()
+		if binding then
+			library:Disconnect(binding)
+		end
 
-            library:ChangeThemeObject(value, options.risky and "Risky Text" or "Disabled Text")
-            value.Text = "NONE"
+		library:ChangeThemeObject(value, "Disabled Text")
+		value.Text = "..."
 
-            keybind.Size = newUDim2(0, 53, 0, 13)
-            keybind.Position = newUDim2(1, -53, 0, 0)
+		binding = library:Connect(services.UserInputService.InputBegan, function(input, gameProcessedEvent)
+			if gameProcessedEvent then
+				return
+			end
 
-            if holder.plus and holder.minus then
-                holder.plus.Position = newUDim2(1, -(13 + keybind.AbsoluteSize.X), 0, 0)
-                holder.minus.Position = newUDim2(1, -(29 + keybind.AbsoluteSize.X), 0, 0)
-            end
+			set(input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode or input.UserInputType)
+			library:Disconnect(binding)
+			wait()
+			binding = nil
+		end)
+	end)
 
-            holder.key = nil
+	library:Connect(services.UserInputService.InputBegan, function(input, gameProcessedEvent)
+		if gameProcessedEvent then
+			return
+		end
 
-            library.flags[options.flag .. "_holding"] = true
-            library.flags[options.flag] = nil
-            options.callback(nil, true)
-        end
-    end
+		if not binding and (input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode or input.UserInputType) == library.flags[options.flag] then
+			if holder.toggle and options.mode ~= "hold" then
+				holder.toggle()
+			end
 
-    set(options.default)
+			if options.mode == "hold" and holder.toggled then
+				library.keybind_list:ChangeObjectTheme(list_name, enabled_theme) -- CHANGED
+				library.flags[options.flag .. "_holding"] = true
+			end
 
-    local binding
+			options.callback(library.flags[options.flag], false, options.mode == "hold")
+		end
+	end)
 
-    keybind.MouseButton1Click:Connect(function()
-        if binding then
-            library:Disconnect(binding)
-        end
+	if options.mode == "hold" then
+		library:Connect(services.UserInputService.InputEnded, function(input, gameProcessedEvent)
+			if gameProcessedEvent then
+				return
+			end
 
-        library:ChangeThemeObject(value, options.risky and "Risky Text" or "Disabled Text")
-        value.Text = "..."
+			if (input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode or input.UserInputType) == library.flags[options.flag] then
+				if not holder.toggle or holder.toggled then
+					library.keybind_list:ChangeObjectTheme(list_name, disabled_theme) -- CHANGED
+				end
 
-        binding = library:Connect(services.UserInputService.InputBegan, function(input, gameProcessedEvent)
-            if gameProcessedEvent then
-                return
-            end
+				library.flags[options.flag .. "_holding"] = false
+				options.callback(library.flags[options.flag], false, false)
+			end
+		end)
+	end
 
-            set(input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode or input.UserInputType)
+	local keybind_types = {}
+	if not options.ignored then
+		library.config_objects[options.flag] = keybind_types
+	end
 
-            library:Disconnect(binding)
-            wait()
-            binding = nil
-        end)
-    end)
+	function keybind_types:Set(key)
+		set(key)
+	end
 
-    library:Connect(services.UserInputService.InputBegan, function(input, gameProcessedEvent)
-        if gameProcessedEvent then
-            return
-        end
-
-        if not binding and (input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode or input.UserInputType) == library.flags[options.flag] then
-            if holder.toggle and options.mode ~= "hold" then
-                holder.toggle()
-            end
-
-            if options.mode == "hold" and holder.toggled then
-                library.keybind_list:ChangeObjectTheme(holder.name, enabled_theme)
-                library.flags[options.flag .. "_holding"] = true
-            end
-
-            options.callback(library.flags[options.flag], false, options.mode == "hold")
-        end
-    end)
-
-    if options.mode == "hold" then
-        library:Connect(services.UserInputService.InputEnded, function(input, gameProcessedEvent)
-            if gameProcessedEvent then
-                return
-            end
-
-            if (input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode or input.UserInputType) == library.flags[options.flag] then
-                if not holder.toggle or holder.toggled then
-                    library.keybind_list:ChangeObjectTheme(holder.name, disabled_theme)
-                end
-
-                library.flags[options.flag .. "_holding"] = false
-                options.callback(library.flags[options.flag], false, false)
-            end
-        end)
-    end
-
-    local keybind_types = {}
-
-    if not options.ignored then
-        library.config_objects[options.flag] = keybind_types
-    end
-
-    function keybind_types:Set(key)
-        set(key)
-    end
-
-    utility.format(keybind_types, true)
-    return keybind_types
+	utility.format(keybind_types, true)
+	return keybind_types
 end
 
 function components.dropdown(holder, options, zindex)
@@ -4505,7 +4497,7 @@ function library:Load(options)
     utility.format(window_types, true)
     return window_types
 end
--- hlleo
+-- h
 
 utility.format(library, true)
 return library
