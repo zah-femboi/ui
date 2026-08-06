@@ -1316,6 +1316,7 @@ function components.toggle(holder, options, zindex)
     })
 
     holder.toggled = false
+    holder.risky = options.risky
 
     if not options.default then
         library.flags[options.flag] = options.default
@@ -1344,10 +1345,17 @@ function components.toggle(holder, options, zindex)
     holder.text.Position = newUDim2(0, 16, 0, 0)
 
     if options.risky then
-        library:ChangeThemeObject(holder.text, "Risky Text")
+        holder.text.Theme = "Risky Text"
     end
 
-    local disconnect_auto_color = utility.auto_button_color(icon, "Object Background", fromRGB(3, 3, 3), fromRGB(8, 8, 8), holder.main)
+    local disconnect_auto_color = utility.auto_button_color(
+        icon,
+        "Object Background",
+        fromRGB(3, 3, 3),
+        fromRGB(8, 8, 8),
+        holder.main
+    )
+
     local current_tween = nil
 
     local function toggle()
@@ -1357,15 +1365,26 @@ function components.toggle(holder, options, zindex)
 
         holder.toggled = not holder.toggled
 
-        local enabled_theme = options.risky and "Risky Text" or "Accent"
-        local disabled_theme = options.risky and "Risky Text" or "Disabled Text"
+        local keybind_enabled_theme = options.risky and "Risky Text" or "Accent"
+        local keybind_disabled_theme = options.risky and "Risky Text" or "Disabled Text"
 
         if not holder.toggled then
-            if holder.keybind and holder.keybind_mode ~= "hold" and library.keybind_list:Exists(holder.name) then
-                library.keybind_list:ChangeObjectTheme(holder.name, disabled_theme)
+
+            if holder.keybind
+            and holder.keybind_mode ~= "hold"
+            and library.keybind_list:Exists(holder.name) then
+
+                library.keybind_list:ChangeObjectTheme(
+                    holder.name,
+                    keybind_disabled_theme
+                )
             end
 
-            if holder.keybind and holder.keybind_mode == "hold" and holder.key and library.keybind_list:Exists(holder.name) then
+            if holder.keybind
+            and holder.keybind_mode == "hold"
+            and holder.key
+            and library.keybind_list:Exists(holder.name) then
+
                 library.keybind_list:Remove(holder.name)
             end
 
@@ -1376,14 +1395,29 @@ function components.toggle(holder, options, zindex)
                 fromRGB(8, 8, 8),
                 holder.main
             )
+
         else
-            if holder.keybind and holder.keybind_mode ~= "hold" and library.keybind_list:Exists(holder.name) then
-                library.keybind_list:ChangeObjectTheme(holder.name, enabled_theme)
+
+            if holder.keybind
+            and holder.keybind_mode ~= "hold"
+            and library.keybind_list:Exists(holder.name) then
+
+                library.keybind_list:ChangeObjectTheme(
+                    holder.name,
+                    keybind_enabled_theme
+                )
             end
 
-            if holder.keybind and holder.keybind_mode == "hold" and holder.key then
+
+            if holder.keybind
+            and holder.keybind_mode == "hold"
+            and holder.key then
+
                 if not library.keybind_list:Exists(holder.name) then
-                    library.keybind_list:Add(holder.name, disabled_theme)
+                    library.keybind_list:Add(
+                        holder.name,
+                        keybind_disabled_theme
+                    )
                 end
 
                 library.keybind_list:Change(
@@ -1392,12 +1426,16 @@ function components.toggle(holder, options, zindex)
                 )
 
                 if options.risky then
-                    library.keybind_list:ChangeObjectTheme(holder.name, "Risky Text")
+                    library.keybind_list:ChangeObjectTheme(
+                        holder.name,
+                        "Risky Text"
+                    )
                 end
             end
 
             disconnect_auto_color()
         end
+
 
         current_tween = library:ChangeThemeObject(
             icon,
@@ -1408,13 +1446,16 @@ function components.toggle(holder, options, zindex)
         options.callback(holder.toggled)
     end
 
+
     if options.default then
         toggle()
     end
 
+
     holder.toggle = toggle
     holder.main.MouseButton1Click:Connect(toggle)
     holder.section:Resize()
+
 
     local toggle_types = {}
 
@@ -1422,27 +1463,34 @@ function components.toggle(holder, options, zindex)
         library.config_objects[options.flag] = toggle_types
     end
 
+
     function toggle_types:Set(bool)
         if holder.toggled ~= bool then
             toggle()
         end
     end
 
+
     function toggle_types:Slider(options)
         return components.slider(holder, options, zindex + 2)
     end
+
 
     function toggle_types:Dropdown(options)
         return components.dropdown(holder, options, zindex + 2)
     end
 
+
     function toggle_types:Colorpicker(options)
         return components.colorpicker(holder, options, zindex + 2)
     end
 
+
     function toggle_types:Keybind(options)
+        options.risky = holder.risky
         return components.keybind(holder, options, zindex + 2)
     end
+
 
     utility.format(toggle_types, true)
     return toggle_types
@@ -1741,6 +1789,7 @@ function components.keybind(holder, options, zindex)
         listignored = options.listignore or options.ignorelist or options.nolist or false,
         mode = "normal",
         blacklist = {},
+        risky = holder.risky or false,
         flag = utility.new_flag(),
         callback = function() end
     })
@@ -1759,12 +1808,18 @@ function components.keybind(holder, options, zindex)
         options.blacklist[key] = true
     end
 
+    local enabled_theme = options.risky and "Risky Text" or "Accent"
+    local disabled_theme = options.risky and "Risky Text" or "Disabled Text"
+
     if options.tooltip then
         components.tooltip(holder.main, options.tooltip)
     end
-
+    
     if not options.listignored and holder.toggle and options.mode ~= "hold" then
-        library.keybind_list:Add(holder.name, holder.toggled and "Accent" or "Disabled Text")
+        library.keybind_list:Add(
+            holder.name,
+            holder.toggled and enabled_theme or disabled_theme
+        )
     end
 
     local keybind = holder.main:Create("Square", {
@@ -1811,10 +1866,10 @@ function components.keybind(holder, options, zindex)
                 if not library.keybind_list:Exists(holder.name) then
                     if options.mode == "hold" then
                         if not holder.toggle or holder.toggled then
-                            library.keybind_list:Add(holder.name, "Disabled Text")
+                            library.keybind_list:Add(holder.name, disabled_theme)
                         end
                     else
-                        library.keybind_list:Add(holder.name, "Accent")
+                        library.keybind_list:Add(holder.name, enabled_theme)
                     end
                 end
 
@@ -1875,7 +1930,7 @@ function components.keybind(holder, options, zindex)
 
         library:ChangeThemeObject(value, "Disabled Text")
         value.Text = "..."
-        
+
         keybind.Size = newUDim2(0, value.TextBounds.X + 25, 0, 13)
         keybind.Position = newUDim2(1, -(value.TextBounds.X + 25), 0, 0)
 
@@ -1885,7 +1940,6 @@ function components.keybind(holder, options, zindex)
         end
 
         binding = library:Connect(services.UserInputService.InputBegan, function(input, gameProcessedEvent)
-            -- ignore chat / textbox input
             if gameProcessedEvent then
                 return
             end
@@ -1898,9 +1952,7 @@ function components.keybind(holder, options, zindex)
         end)
     end)
 
-
     library:Connect(services.UserInputService.InputBegan, function(input, gameProcessedEvent)
-        -- ignore chat / textbox input
         if gameProcessedEvent then
             return
         end
@@ -1910,8 +1962,8 @@ function components.keybind(holder, options, zindex)
                 holder.toggle()
             end
 
-            if options.mode == "hold" and (holder.toggled ~= nil and holder.toggled) then
-                library.keybind_list:ChangeObjectTheme(holder.name, "Accent")
+            if options.mode == "hold" and holder.toggled then
+                library.keybind_list:ChangeObjectTheme(holder.name, enabled_theme)
                 library.flags[options.flag .. "_holding"] = true
             end
         
@@ -1919,17 +1971,15 @@ function components.keybind(holder, options, zindex)
         end
     end)
 
-
     if options.mode == "hold" then
         library:Connect(services.UserInputService.InputEnded, function(input, gameProcessedEvent)
-            -- ignore chat / textbox input
             if gameProcessedEvent then
                 return
             end
 
             if (input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode or input.UserInputType) == library.flags[options.flag] then
                 if not holder.toggle or holder.toggled then
-                    library.keybind_list:ChangeObjectTheme(holder.name, "Disabled Text")
+                    library.keybind_list:ChangeObjectTheme(holder.name, disabled_theme)
                 end
 
                 library.flags[options.flag .. "_holding"] = false
@@ -4528,7 +4578,7 @@ function library:Load(options)
     utility.format(window_types, true)
     return window_types
 end
+-- ////////
 
--- mayor
 utility.format(library, true)
 return library
