@@ -1357,12 +1357,12 @@ function components.toggle(holder, options, zindex)
 
         holder.toggled = not holder.toggled
 
-        local keybind_theme = options.risky and "Risky Text" or "Accent"
-        local disabled_keybind_theme = options.risky and "Risky Text" or "Disabled Text"
+        local enabled_theme = options.risky and "Risky Text" or "Accent"
+        local disabled_theme = options.risky and "Risky Text" or "Disabled Text"
 
         if not holder.toggled then
             if holder.keybind and holder.keybind_mode ~= "hold" and library.keybind_list:Exists(holder.name) then
-                library.keybind_list:ChangeObjectTheme(holder.name, disabled_keybind_theme)
+                library.keybind_list:ChangeObjectTheme(holder.name, disabled_theme)
             end
 
             if holder.keybind and holder.keybind_mode == "hold" and holder.key and library.keybind_list:Exists(holder.name) then
@@ -1378,15 +1378,18 @@ function components.toggle(holder, options, zindex)
             )
         else
             if holder.keybind and holder.keybind_mode ~= "hold" and library.keybind_list:Exists(holder.name) then
-                library.keybind_list:ChangeObjectTheme(holder.name, keybind_theme)
+                library.keybind_list:ChangeObjectTheme(holder.name, enabled_theme)
             end
 
             if holder.keybind and holder.keybind_mode == "hold" and holder.key then
                 if not library.keybind_list:Exists(holder.name) then
-                    library.keybind_list:Add(holder.name, disabled_keybind_theme)
+                    library.keybind_list:Add(holder.name, disabled_theme)
                 end
 
-                library.keybind_list:Change(holder.name, ("[%s] %s"):format(holder.key_str, holder.name))
+                library.keybind_list:Change(
+                    holder.name,
+                    ("[%s] %s"):format(holder.key_str, holder.name)
+                )
 
                 if options.risky then
                     library.keybind_list:ChangeObjectTheme(holder.name, "Risky Text")
@@ -4526,6 +4529,6 @@ function library:Load(options)
     return window_types
 end
 
--- koik
+-- mayor
 utility.format(library, true)
 return library
