@@ -1344,7 +1344,7 @@ function components.toggle(holder, options, zindex)
     holder.text.Position = newUDim2(0, 16, 0, 0)
 
     if options.risky then
-        holder.text.Theme = "Risky Text"
+        library:ChangeThemeObject(holder.text, "Risky Text")
     end
 
     local disconnect_auto_color = utility.auto_button_color(icon, "Object Background", fromRGB(3, 3, 3), fromRGB(8, 8, 8), holder.main)
@@ -4510,6 +4510,6 @@ function library:Load(options)
     return window_types
 end
 
---// dont leave us in the dark // heh moz
+//--
 utility.format(library, true)
 return library
