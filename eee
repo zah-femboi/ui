@@ -714,8 +714,11 @@ local library = {
             ["Window Background"] = fromRGB(30, 30, 30),
             ["Window Border"] = fromRGB(65, 65, 65),
             ["Black Border"] = fromRGB(10, 10, 10),
+
             ["Text"] = fromRGB(210, 210, 210),
             ["Disabled Text"] = fromRGB(110, 110, 110),
+            ["Risky Text"] = fromRGB(99, 0, 0),
+
             ["Tab Background"] = fromRGB(25, 25, 25),
             ["Tab Border"] = fromRGB(45, 45, 45),
             ["Section Background"] = fromRGB(30, 30, 30),
@@ -1307,6 +1310,7 @@ function components.toggle(holder, options, zindex)
     utility.defaults(options, {
         default = false,
         ignored = options.noconfig or options.ignoreconfig or options.configignore or false,
+        risky = false,
         flag = utility.new_flag(),
         callback = function() end
     })
@@ -1338,6 +1342,10 @@ function components.toggle(holder, options, zindex)
     })
 
     holder.text.Position = newUDim2(0, 16, 0, 0)
+
+    if options.risky then
+        holder.text.Theme = "Risky Text"
+    end
 
     local disconnect_auto_color = utility.auto_button_color(icon, "Object Background", fromRGB(3, 3, 3), fromRGB(8, 8, 8), holder.main)
     local current_tween = nil
@@ -4501,7 +4509,7 @@ function library:Load(options)
     utility.format(window_types, true)
     return window_types
 end
---//
 
+--// dont leave us in the dark // heh moz
 utility.format(library, true)
 return library
