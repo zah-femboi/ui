@@ -1303,175 +1303,126 @@ function components.button(section, options, zindex)
 end
 
 function components.toggle(holder, options, zindex)
-    zindex = zindex or 9;
+	zindex = zindex or 9
+	utility.format(options)
+	utility.defaults(options, {
+		default = false,
+		ignored = options.noconfig or options.ignoreconfig or options.configignore or false,
+		risky = false,
+		flag = utility.new_flag(),
+		callback = function() end
+	})
 
-    utility.format(options)
+	holder.toggled = false
+	if not options.default then
+		library.flags[options.flag] = options.default
+		options.callback(options.default)
+	end
 
-    utility.defaults(options, {
-        default = false,
-        ignored = options.noconfig or options.ignoreconfig or options.configignore or false,
-        risky = false,
-        flag = utility.new_flag(),
-        callback = function() end
-    })
+	if options.tooltip then
+		components.tooltip(holder.main, options.tooltip)
+	end
 
-    holder.toggled = false
-    holder.risky = options.risky
+	local enabled_theme = options.risky and "Risky Text" or "Accent"
 
-    if not options.default then
-        library.flags[options.flag] = options.default
-        options.callback(options.default)
-    end
+	local icon = holder.main:Create("Square", {
+		Size = newUDim2(0, 9, 0, 9),
+		Position = newUDim2(0, 0, 0, 2),
+		ZIndex = zindex,
+		Theme = "Object Background",
+		OutlineTheme = "Object Border"
+	})
 
-    if options.tooltip then
-        components.tooltip(holder.main, options.tooltip)
-    end
+	icon:Create("Image", {
+		Size = newUDim2(1, 0, 1, 0),
+		Transparency = 0.4,
+		ZIndex = zindex + 1,
+		Data = decode("iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABuSURBVChTxY9BDoAgDASLGD2ReOYNPsR/+BAfroI7hibe9OYmky2wbUPIOdsXdc1f9WMwppQm+SDGBnUvomAQBH49qzhFEag25869ElzaIXDhD4JGbyoEVxUedN8FKwnfmwhucgKICc+pNB1mZhdCdhsa2ky0FAAAAABJRU5ErkJggg==")
+	})
 
-    local icon = holder.main:Create("Square", {
-        Size = newUDim2(0, 9, 0, 9),
-        Position = newUDim2(0, 0, 0, 2),
-        ZIndex = zindex,
-        Theme = "Object Background",
-        OutlineTheme = "Object Border"
-    })
+	holder.text.Position = newUDim2(0, 16, 0, 0)
+	if options.risky then
+		library:ChangeThemeObject(holder.text, "Risky Text")
+	end
 
-    icon:Create("Image", {
-        Size = newUDim2(1, 0, 1, 0),
-        Transparency = 0.4,
-        ZIndex = zindex + 1,
-        Data = decode("iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABuSURBVChTxY9BDoAgDASLGD2ReOYNPsR/+BAfroI7hibe9OYmky2wbUPIOdsXdc1f9WMwppQm+SDGBnUvomAQBH49qzhFEag25869ElzaIXDhD4JGbyoEVxUedN8FKwnfmwhucgKICc+pNB1mZhdCdhsa2ky0FAAAAABJRU5ErkJggg==")
-    })
+	local disconnect_auto_color = utility.auto_button_color(icon, "Object Background", fromRGB(3, 3, 3), fromRGB(8, 8, 8), holder.main)
+	local current_tween = nil
 
-    holder.text.Position = newUDim2(0, 16, 0, 0)
+	local function toggle()
+		if current_tween then
+			current_tween:Cancel()
+		end
 
-    if options.risky then
-        holder.text.Theme = "Risky Text"
-    end
+		holder.toggled = not holder.toggled
 
-    local disconnect_auto_color = utility.auto_button_color(
-        icon,
-        "Object Background",
-        fromRGB(3, 3, 3),
-        fromRGB(8, 8, 8),
-        holder.main
-    )
+		if not holder.toggled then
+			if holder.keybind and holder.keybind_mode ~= "hold" and library.keybind_list:Exists(holder.name) then
+				library.keybind_list:ChangeObjectTheme(holder.name, "Disabled Text")
+			end
 
-    local current_tween = nil
+			if holder.keybind_mode == "hold" and holder.key and library.keybind_list:Exists(holder.name) then
+				library.keybind_list:Remove(holder.name)
+			end
 
-    local function toggle()
-        if current_tween then
-            current_tween:Cancel()
-        end
+			disconnect_auto_color = utility.auto_button_color(icon, "Object Background", fromRGB(3, 3, 3), fromRGB(8, 8, 8), holder.main)
+		else
+			if holder.keybind and holder.keybind_mode ~= "hold" and library.keybind_list:Exists(holder.name) then
+				library.keybind_list:ChangeObjectTheme(holder.name, enabled_theme)
+			end
 
-        holder.toggled = not holder.toggled
+			if holder.keybind_mode == "hold" and holder.key then
+				if not library.keybind_list:Exists(holder.name) then
+					library.keybind_list:Add(holder.name, "Disabled Text")
+				end
+				library.keybind_list:Change(holder.name, ("[%s] %s"):format(holder.key_str, holder.name))
+			end
 
-        if not holder.toggled then
-            if holder.keybind 
-            and holder.keybind_mode ~= "hold" 
-            and library.keybind_list:Exists(holder.name) then
+			disconnect_auto_color()
+		end
 
-                library.keybind_list:ChangeObjectTheme(
-                    holder.name,
-                    "Disabled Text"
-                )
-            end
+		-- CHANGED: was holder.toggled and "Accent" or "Object Background"
+		current_tween = library:ChangeThemeObject(icon, holder.toggled and enabled_theme or "Object Background")
+		library.flags[options.flag] = holder.toggled
+		options.callback(holder.toggled)
+	end
 
-            if holder.keybind 
-            and holder.keybind_mode == "hold" 
-            and holder.key 
-            and library.keybind_list:Exists(holder.name) then
+	if options.default then
+		toggle()
+	end
 
-                library.keybind_list:Remove(holder.name)
-            end
+	holder.toggle = toggle
+	holder.main.MouseButton1Click:Connect(toggle)
+	holder.section:Resize()
 
-            disconnect_auto_color = utility.auto_button_color(
-                icon,
-                "Object Background",
-                fromRGB(3, 3, 3),
-                fromRGB(8, 8, 8),
-                holder.main
-            )
+	local toggle_types = {}
+	if not options.ignored then
+		library.config_objects[options.flag] = toggle_types
+	end
 
-        else
+	function toggle_types:Set(bool)
+		if holder.toggled ~= bool then
+			toggle()
+		end
+	end
 
-            if holder.keybind 
-            and holder.keybind_mode ~= "hold" 
-            and library.keybind_list:Exists(holder.name) then
+	function toggle_types:Slider(options)
+		return components.slider(holder, options, zindex + 2)
+	end
 
-                library.keybind_list:ChangeObjectTheme(
-                    holder.name,
-                    "Accent"
-                )
-            end
+	function toggle_types:Dropdown(options)
+		return components.dropdown(holder, options, zindex + 2)
+	end
 
-            if holder.keybind 
-            and holder.keybind_mode == "hold" 
-            and holder.key then
+	function toggle_types:Colorpicker(options)
+		return components.colorpicker(holder, options, zindex + 2)
+	end
 
-                if not library.keybind_list:Exists(holder.name) then
-                    library.keybind_list:Add(
-                        holder.name,
-                        "Disabled Text"
-                    )
-                end
+	function toggle_types:Keybind(options)
+		return components.keybind(holder, options, zindex + 2)
+	end
 
-                library.keybind_list:Change(
-                    holder.name,
-                    ("[%s] %s"):format(holder.key_str, holder.name)
-                )
-            end
-
-            disconnect_auto_color()
-        end
-
-        current_tween = library:ChangeThemeObject(
-            icon,
-            holder.toggled and "Accent" or "Object Background"
-        )
-
-        library.flags[options.flag] = holder.toggled
-        options.callback(holder.toggled)
-    end
-
-    if options.default then
-        toggle()
-    end
-
-    holder.toggle = toggle
-    holder.main.MouseButton1Click:Connect(toggle)
-    holder.section:Resize()
-
-    local toggle_types = {}
-
-    if not options.ignored then
-        library.config_objects[options.flag] = toggle_types
-    end
-
-    function toggle_types:Set(bool)
-        if holder.toggled ~= bool then
-            toggle()
-        end
-    end
-
-    function toggle_types:Slider(options)
-        return components.slider(holder, options, zindex + 2)
-    end
-
-    function toggle_types:Dropdown(options)
-        return components.dropdown(holder, options, zindex + 2)
-    end
-
-    function toggle_types:Colorpicker(options)
-        return components.colorpicker(holder, options, zindex + 2)
-    end
-
-    function toggle_types:Keybind(options)
-        options.risky = holder.risky
-        return components.keybind(holder, options, zindex + 2)
-    end
-
-    utility.format(toggle_types, true)
-    return toggle_types
+	utility.format(toggle_types, true)
+	return toggle_types
 end
 
 function components.box(section, options, zindex)
@@ -1859,7 +1810,8 @@ function components.keybind(holder, options, zindex)
                 end
             end
 
-            library:ChangeThemeObject(value, "Text")
+            library:ChangeThemeObject(value, options.risky and "Risky Text" or "Text")
+
             value.Text = key_str
 
             keybind.Size = newUDim2(0, value.TextBounds.X + 25, 0, 13)
@@ -1883,7 +1835,7 @@ function components.keybind(holder, options, zindex)
                 library.keybind_list:Remove(holder.name)
             end
 
-            library:ChangeThemeObject(value, "Disabled Text")
+            library:ChangeThemeObject(value, options.risky and "Risky Text" or "Disabled Text")
             value.Text = "NONE"
 
             keybind.Size = newUDim2(0, 53, 0, 13)
@@ -1911,7 +1863,7 @@ function components.keybind(holder, options, zindex)
             library:Disconnect(binding)
         end
 
-        library:ChangeThemeObject(value, "Disabled Text")
+        library:ChangeThemeObject(value, options.risky and "Risky Text" or "Disabled Text")
         value.Text = "..."
 
         binding = library:Connect(services.UserInputService.InputBegan, function(input, gameProcessedEvent)
@@ -4553,7 +4505,7 @@ function library:Load(options)
     utility.format(window_types, true)
     return window_types
 end
+-- hlleo
 
---pppppspda
 utility.format(library, true)
 return library
