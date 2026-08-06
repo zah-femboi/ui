@@ -843,13 +843,10 @@ function utility.auto_button_color(button, color, hover, click, holder)
 
     local up = holder.MouseButton1Up:Connect(function()
         mouse_down = false
-        --button.Color = mouse_over and utility.color_add((is_theme and library.theme[color] or color), hover) or (is_theme and library.theme[color] or color)
         button.Color = is_theme and library.theme[color] or color
     end)
 
     return function()
-        --enter:Disconnect()
-        --leave:Disconnect()
         down:Disconnect()
         up:Disconnect()
     end
@@ -1323,7 +1320,10 @@ function components.toggle(holder, options, zindex)
 		components.tooltip(holder.main, options.tooltip)
 	end
 
-	local enabled_theme = options.risky and "Risky Text" or "Accent"
+	-- CHANGED: gate risky styling behind the global setting (default true if setting missing)
+	local risky_enabled = options.risky and (library.settings == nil or library.settings.enableRiskyText ~= false)
+	local enabled_theme = risky_enabled and "Risky Text" or "Accent"
+	holder.risky = risky_enabled -- so Keybind() attached later inherits the resolved value, not just options.risky
 
 	local icon = holder.main:Create("Square", {
 		Size = newUDim2(0, 9, 0, 9),
@@ -1341,7 +1341,8 @@ function components.toggle(holder, options, zindex)
 	})
 
 	holder.text.Position = newUDim2(0, 16, 0, 0)
-	if options.risky then
+	-- CHANGED: was options.risky
+	if risky_enabled then
 		library:ChangeThemeObject(holder.text, "Risky Text")
 	end
 
@@ -1356,31 +1357,30 @@ function components.toggle(holder, options, zindex)
 		holder.toggled = not holder.toggled
 
 		if not holder.toggled then
-			if holder.keybind and holder.keybind_mode ~= "hold" and library.keybind_list:Exists(holder.name) then
-				library.keybind_list:ChangeObjectTheme(holder.name, "Disabled Text")
+			if holder.keybind and holder.keybind_mode ~= "hold" and library.keybind_list:Exists(holder.list_name or holder.name) then
+				library.keybind_list:ChangeObjectTheme(holder.list_name or holder.name, "Disabled Text")
 			end
 
-			if holder.keybind_mode == "hold" and holder.key and library.keybind_list:Exists(holder.name) then
-				library.keybind_list:Remove(holder.name)
+			if holder.keybind_mode == "hold" and holder.key and library.keybind_list:Exists(holder.list_name or holder.name) then
+				library.keybind_list:Remove(holder.list_name or holder.name)
 			end
 
 			disconnect_auto_color = utility.auto_button_color(icon, "Object Background", fromRGB(3, 3, 3), fromRGB(8, 8, 8), holder.main)
 		else
-			if holder.keybind and holder.keybind_mode ~= "hold" and library.keybind_list:Exists(holder.name) then
-				library.keybind_list:ChangeObjectTheme(holder.name, enabled_theme)
+			if holder.keybind and holder.keybind_mode ~= "hold" and library.keybind_list:Exists(holder.list_name or holder.name) then
+				library.keybind_list:ChangeObjectTheme(holder.list_name or holder.name, enabled_theme)
 			end
 
 			if holder.keybind_mode == "hold" and holder.key then
-				if not library.keybind_list:Exists(holder.name) then
-					library.keybind_list:Add(holder.name, "Disabled Text")
+				if not library.keybind_list:Exists(holder.list_name or holder.name) then
+					library.keybind_list:Add(holder.list_name or holder.name, "Disabled Text")
 				end
-				library.keybind_list:Change(holder.name, ("[%s] %s"):format(holder.key_str, holder.name))
+				library.keybind_list:Change(holder.list_name or holder.name, ("[%s] %s"):format(holder.key_str, holder.list_name or holder.name))
 			end
 
 			disconnect_auto_color()
 		end
 
-		-- CHANGED: was holder.toggled and "Accent" or "Object Background"
 		current_tween = library:ChangeThemeObject(icon, holder.toggled and enabled_theme or "Object Background")
 		library.flags[options.flag] = holder.toggled
 		options.callback(holder.toggled)
@@ -1721,13 +1721,14 @@ function components.keybind(holder, options, zindex)
 		callback = function() end
 	})
 
-	local enabled_theme = options.risky and "Risky Text" or "Accent"
-	local disabled_theme = options.risky and "Risky Text" or "Disabled Text"
+	local risky_enabled = options.risky and (library.settings == nil or library.settings.enableRiskyText ~= false)
+	local enabled_theme = risky_enabled and "Risky Text" or "Accent"
+	local disabled_theme = risky_enabled and "Risky Text" or "Disabled Text"
 
 	holder.name = options.listname or holder.name
 
-	-- NEW: single source of truth for what shows up in the keybind list
-	local list_name = options.risky and (holder.name .. " -- Risky") or holder.name
+	local list_name = risky_enabled and (holder.name .. " -- Risky") or holder.name
+	holder.list_name = list_name
 
 	options.mode = options.mode:lower()
 
@@ -1745,7 +1746,6 @@ function components.keybind(holder, options, zindex)
 	end
 
 	if not options.listignored and holder.toggle and options.mode ~= "hold" then
-		-- CHANGED: was holder.name
 		library.keybind_list:Add(
 			list_name,
 			holder.toggled and enabled_theme or disabled_theme
@@ -1793,20 +1793,20 @@ function components.keybind(holder, options, zindex)
 			holder.key_str = key_str
 
 			if not options.listignored then
-				if not library.keybind_list:Exists(list_name) then -- CHANGED
+				if not library.keybind_list:Exists(list_name) then 
 					if options.mode == "hold" then
 						if not holder.toggle or holder.toggled then
-							library.keybind_list:Add(list_name, disabled_theme) -- CHANGED
+							library.keybind_list:Add(list_name, disabled_theme) 
 						end
 					else
-						library.keybind_list:Add(list_name, enabled_theme) -- CHANGED
+						library.keybind_list:Add(list_name, enabled_theme) 
 					end
 				end
 
-				if library.keybind_list:Exists(list_name) then -- CHANGED
+				if library.keybind_list:Exists(list_name) then 
 					library.keybind_list:Change(
-						list_name, -- CHANGED
-						("[%s] %s"):format(key_str, list_name) -- CHANGED
+						list_name,
+						("[%s] %s"):format(key_str, list_name) 
 					)
 				end
 			end
@@ -1828,8 +1828,8 @@ function components.keybind(holder, options, zindex)
 		else
 			holder.key_str = "NONE"
 
-			if not options.listignored and library.keybind_list:Exists(list_name) then -- CHANGED
-				library.keybind_list:Remove(list_name) -- CHANGED
+			if not options.listignored and library.keybind_list:Exists(list_name) then 
+				library.keybind_list:Remove(list_name) 
 			end
 
 			library:ChangeThemeObject(value, "Disabled Text")
@@ -1883,7 +1883,7 @@ function components.keybind(holder, options, zindex)
 			end
 
 			if options.mode == "hold" and holder.toggled then
-				library.keybind_list:ChangeObjectTheme(list_name, enabled_theme) -- CHANGED
+				library.keybind_list:ChangeObjectTheme(list_name, enabled_theme) 
 				library.flags[options.flag .. "_holding"] = true
 			end
 
@@ -1899,7 +1899,7 @@ function components.keybind(holder, options, zindex)
 
 			if (input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode or input.UserInputType) == library.flags[options.flag] then
 				if not holder.toggle or holder.toggled then
-					library.keybind_list:ChangeObjectTheme(list_name, disabled_theme) -- CHANGED
+					library.keybind_list:ChangeObjectTheme(list_name, disabled_theme) 
 				end
 
 				library.flags[options.flag .. "_holding"] = false
@@ -3902,11 +3902,12 @@ function library:Load(options)
         fontsize = 13,
         discord = "e",
         sizex = 700,
-        sizey = 550
+        sizey = 550,
+        enableRiskyText = false
     }
 
     if getgenv().LibrarySettings then
-        for i,v in pairs(getgenv().LibrarySettings) do
+        for i, v in pairs(getgenv().LibrarySettings) do
             settings[i] = v
         end
     end
@@ -4497,7 +4498,7 @@ function library:Load(options)
     utility.format(window_types, true)
     return window_types
 end
--- h
 
+--ppp
 utility.format(library, true)
 return library
