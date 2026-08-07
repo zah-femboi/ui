@@ -1856,9 +1856,20 @@ if key and enums[key] and (keys[key] or services.UserInputService:GetStringForKe
 	if not options.listignored then
 		if not library.keybind_list:Exists(list_name) then
 			if options.mode == "hold" then
-				if not holder.toggle or holder.toggled then
-					library.keybind_list:Add(list_name, disabled_theme)
-				end
+				-- FIX: previously this only added the entry when
+				-- `not holder.toggle or holder.toggled` was true, which
+				-- meant most hold-mode binds (toggle exists and starts off)
+				-- never got an entry created at all. InputBegan/InputEnded
+				-- only ever call ChangeObjectTheme (never Add), so if the
+				-- entry wasn't created here, it could never appear.
+				-- Now we always add it, just with the correct starting theme.
+				local active = library.flags[options.flag .. "_holding"]
+					or (holder.toggle and holder.toggled)
+
+				library.keybind_list:Add(
+					list_name,
+					active and enabled_theme or disabled_theme
+				)
 			else
 				library.keybind_list:Add(list_name, enabled_theme)
 			end
@@ -4700,6 +4711,6 @@ function library:Load(options)
     return window_types
 end
 
--- ---
+
 utility.format(library, true)
 return library
