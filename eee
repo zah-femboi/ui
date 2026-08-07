@@ -1831,22 +1831,24 @@ function components.keybind(holder, options, zindex)
     end
 
     local function reposition_mode_button()
-        if not options.canChangeMode then
+        if not options.canChangeMode or not mode_button then
             return
         end
 
         mode_value.Text = mode_label(options.mode)
 
+        local width = mode_value.TextBounds.X + 16
+
         mode_button.Size = newUDim2(
             0,
-            mode_value.TextBounds.X + 16,
+            width,
             0,
             13
         )
 
         mode_button.Position = newUDim2(
             1,
-            -(mode_button.AbsoluteSize.X - 2),
+            5,
             0,
             0
         )
@@ -1890,8 +1892,20 @@ function components.keybind(holder, options, zindex)
 
             library:ChangeThemeObject(value, "Text")
             value.Text = key_str
-            keybind.Size = newUDim2(0, value.TextBounds.X + 25, 0, 13)
-            keybind.Position = newUDim2(1, -(value.TextBounds.X + 25), 0, 0)
+            keybind.Size = newUDim2(
+                0,
+                value.TextBounds.X + 25,
+                0,
+                13
+            )
+            local extra = options.canChangeMode and 50 or 0
+
+            keybind.Position = newUDim2(
+                1,
+                -(value.TextBounds.X + 25 + extra),
+                0,
+                0
+            )
 
             if holder.plus and holder.minus then
                 holder.plus.Position = newUDim2(1, -(13 + keybind.AbsoluteSize.X), 0, 0)
@@ -4630,7 +4644,7 @@ function library:Load(options)
     utility.format(window_types, true)
     return window_types
 end
--------
 
+---ppp
 utility.format(library, true)
 return library
