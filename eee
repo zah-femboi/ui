@@ -710,7 +710,7 @@ local library = {
     font_size = 13,
     themes = {
         Default = {
-            ["Accent"] = fromRGB(232, 192, 61),
+            ["Accent"] = fromRGB(6, 94, 144),
             ["Window Background"] = fromRGB(30, 30, 30),
             ["Window Border"] = fromRGB(65, 65, 65),
             ["Black Border"] = fromRGB(10, 10, 10),
@@ -1714,8 +1714,11 @@ function components.keybind(holder, options, zindex)
     utility.defaults(options, {
         ignored = options.noconfig or options.ignoreconfig or options.configignore or false,
         listignored = options.listignore or options.ignorelist or options.nolist or false,
+
         mode = "toggle",
         modes = { "hold", "toggle" },
+        canChangeMode = false,
+
         blacklist = {},
         risky = holder.risky or false,
         flag = utility.new_flag(),
@@ -1788,25 +1791,29 @@ function components.keybind(holder, options, zindex)
         ZIndex = zindex + 1
     })
 
-    local mode_button = holder.main:Create("Square", {
-        Size = newUDim2(0, 0, 0, 13),
-        Position = newUDim2(1, 0, 0, 0),
-        ZIndex = zindex,
-        Theme = "Object Background",
-        OutlineTheme = "Object Border"
-    })
+    local mode_button, mode_value
 
-    utility.auto_button_color(mode_button, "Object Background", fromRGB(3, 3, 3), fromRGB(8, 8, 8))
+    if options.canChangeMode then
+        mode_button = holder.main:Create("Square", {
+            Size = newUDim2(0, 20, 0, 13),
+            Position = newUDim2(1, 0, 0, 0),
+            ZIndex = zindex,
+            Theme = "Object Background",
+            OutlineTheme = "Object Border"
+        })
 
-    local mode_value = mode_button:Create("Text", {
-        Text = "",
-        Font = library.font,
-        Size = library.font_size,
-        Position = newUDim2(0.5, 0, 0, 0),
-        Theme = "Accent",
-        Center = true,
-        ZIndex = zindex + 1
-    })
+        utility.auto_button_color(mode_button, "Object Background", fromRGB(3, 3, 3), fromRGB(8, 8, 8))
+
+        mode_value = mode_button:Create("Text", {
+            Text = "",
+            Font = library.font,
+            Size = library.font_size,
+            Position = newUDim2(0.5, 0, 0, 0),
+            Theme = "Accent",
+            Center = true,
+            ZIndex = zindex + 1
+        })
+    end
 
     local mode_labels = {
         hold = "H",
@@ -1818,11 +1825,26 @@ function components.keybind(holder, options, zindex)
     end
 
     local function reposition_mode_button()
+        if not options.canChangeMode then
+            return
+        end
+
         mode_value.Text = mode_label(options.mode)
-        mode_button.Size = newUDim2(0, mode_value.TextBounds.X + 16, 0, 13)
+
+        local mode_width = mode_value.TextBounds.X + 16
+
+        mode_button.Size = newUDim2(0, mode_width, 0, 13)
+
         mode_button.Position = newUDim2(
             1,
-            -(mode_button.AbsoluteSize.X - 2),
+            -mode_width,
+            0,
+            0
+        )
+
+        keybind.Position = newUDim2(
+            1,
+            -(keybind.AbsoluteSize.X + mode_width + 3),
             0,
             0
         )
@@ -1867,7 +1889,12 @@ function components.keybind(holder, options, zindex)
             library:ChangeThemeObject(value, "Text")
             value.Text = key_str
             keybind.Size = newUDim2(0, value.TextBounds.X + 25, 0, 13)
-            keybind.Position = newUDim2(1, -(value.TextBounds.X + 25), 0, 0)
+            keybind.Position = newUDim2(
+                1,
+                -(value.TextBounds.X + 25 + mode_button.AbsoluteSize.X + 3),
+                0,
+                0
+            )
 
             if holder.plus and holder.minus then
                 holder.plus.Position = newUDim2(1, -(13 + keybind.AbsoluteSize.X), 0, 0)
@@ -1890,7 +1917,12 @@ function components.keybind(holder, options, zindex)
             library:ChangeThemeObject(value, "Disabled Text")
             value.Text = "NONE"
             keybind.Size = newUDim2(0, 53, 0, 13)
-            keybind.Position = newUDim2(1, -53, 0, 0)
+            keybind.Position = newUDim2(
+                1,
+                -(53 + mode_button.AbsoluteSize.X + 3),
+                0,
+                0
+            )
 
             if holder.plus and holder.minus then
                 holder.plus.Position = newUDim2(1, -(13 + keybind.AbsoluteSize.X), 0, 0)
@@ -1929,15 +1961,17 @@ function components.keybind(holder, options, zindex)
         end)
     end)
 
-    mode_button.MouseButton1Click:Connect(function()
-        options.mode = options.mode == "hold" and "toggle" or "hold"
+    if options.canChangeMode then
+        mode_button.MouseButton1Click:Connect(function()
+            options.mode = options.mode == "hold" and "toggle" or "hold"
 
-        holder.keybind_mode = options.mode
-        library.flags[options.flag .. "_mode"] = options.mode
-        library.flags[options.flag .. "_holding"] = false
+            holder.keybind_mode = options.mode
+            library.flags[options.flag .. "_mode"] = options.mode
+            library.flags[options.flag .. "_holding"] = false
 
-        reposition_mode_button()
-    end)
+            reposition_mode_button()
+        end)
+    end
 
     library:Connect(services.UserInputService.InputBegan, function(input, gameProcessedEvent)
         if gameProcessedEvent then
