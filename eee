@@ -2075,42 +2075,42 @@ function components.keybind(holder, options, zindex)
 		end
 	end)
 
-	library:Connect(services.UserInputService.InputEnded, function(input, gameProcessedEvent)
-		if gameProcessedEvent then
-			return
-		end
+    library:Connect(services.UserInputService.InputEnded, function(input, gameProcessedEvent)
+        if gameProcessedEvent then
+            return
+        end
 
-		if options.mode ~= "hold" then
-			return
-		end
+        if options.mode ~= "hold" then
+            return
+        end
 
-		local released = input.UserInputType == Enum.UserInputType.Keyboard
-			and input.KeyCode
-			or input.UserInputType
+        local released = input.UserInputType == Enum.UserInputType.Keyboard
+            and input.KeyCode
+            or input.UserInputType
 
-		if released == library.flags[options.flag] then
+        if released == library.flags[options.flag] then
 
-			library.flags[options.flag .. "_holding"] = false
+            library.flags[options.flag .. "_holding"] = false
 
-			if holder.toggle and holder.toggled then
-				holder.toggle()
-			end
+            if holder.toggle and holder.toggled then
+                holder.toggle()
+            end
 
-			-- keep it in the list instead of removing
-			if not options.listignored and library.keybind_list:Exists(list_entry) then
-				library.keybind_list:ChangeObjectTheme(
-					list_entry,
-					disabled_theme
-				)
-			end
+            -- keep keybind visible
+            if not options.listignored and library.keybind_list:Exists(list_entry) then
+                library.keybind_list:ChangeObjectTheme(
+                    list_entry,
+                    enabled_theme
+                )
+            end
 
-			options.callback(
-				library.flags[options.flag],
-				false,
-				false
-			)
-		end
-	end)
+            options.callback(
+                library.flags[options.flag],
+                false,
+                false
+            )
+        end
+    end)
 
 	local keybind_types = {}
 
@@ -4718,6 +4718,5 @@ function library:Load(options)
     return window_types
 end
 
--- //|||
 utility.format(library, true)
 return library
