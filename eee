@@ -1733,10 +1733,17 @@ function components.keybind(holder, options, zindex)
 
     options.mode = options.mode:lower()
 
-    if library.flags[options.flag .. "_mode"] then
-        options.mode = library.flags[options.flag .. "_mode"]
+
+    local savedMode = library.flags[options.flag .. "_mode"]
+
+    if savedMode == "hold" or savedMode == "toggle" then
+        options.mode = savedMode
+    else
+        options.mode = "toggle" 
     end
+
     library.flags[options.flag .. "_mode"] = options.mode
+
 
     local old = clone(options.blacklist)
     options.blacklist = {}
@@ -1815,7 +1822,7 @@ function components.keybind(holder, options, zindex)
         mode_button.Size = newUDim2(0, mode_value.TextBounds.X + 16, 0, 13)
         mode_button.Position = newUDim2(
             1,
-            keybind.AbsoluteSize.X + 4,
+            -(mode_button.AbsoluteSize.X - 2),
             0,
             0
         )
@@ -1867,7 +1874,7 @@ function components.keybind(holder, options, zindex)
                 holder.minus.Position = newUDim2(1, -(29 + keybind.AbsoluteSize.X), 0, 0)
             end
 
-            reposition_mode_button() -- NEW
+            reposition_mode_button() 
 
             holder.key = key
             library.flags[options.flag .. "_holding"] = false
@@ -1931,7 +1938,7 @@ function components.keybind(holder, options, zindex)
 
         reposition_mode_button()
     end)
-    
+
     library:Connect(services.UserInputService.InputBegan, function(input, gameProcessedEvent)
         if gameProcessedEvent then
             return
@@ -4588,6 +4595,6 @@ function library:Load(options)
     return window_types
 end
 
--- //
+-- ||
 utility.format(library, true)
 return library
