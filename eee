@@ -1709,22 +1709,44 @@ end
 
 function components.keybind(holder, options, zindex)
     zindex = zindex or 11
+
+    options = options or {}
+
     utility.format(options)
 
     utility.defaults(options, {
         ignored = options.noconfig or options.ignoreconfig or options.configignore or false,
         listignored = options.listignore or options.ignorelist or options.nolist or false,
+
         mode = "toggle",
-        modes = { "hold", "toggle" },
+        modes = {
+            "hold",
+            "toggle"
+        },
+
         canChangeMode = false,
+
         blacklist = {},
+
         risky = holder.risky or false,
+
         flag = utility.new_flag(),
-        callback = function() end
+
+        callback = function()
+        end
     })
 
+
+    if options.canChangeMode == nil then
+        options.canChangeMode = false
+    end
+
     local risky_enabled = options.risky and (library.settings == nil or library.settings.enableRiskyText ~= false)
+
+
     local enabled_theme = risky_enabled and "Risky Text" or "Accent"
+
+
     local disabled_theme = risky_enabled and "Risky Text" or "Disabled Text"
 
     holder.name = options.listname or holder.name
@@ -4823,6 +4845,6 @@ function library:Load(options)
     return window_types
 end
 
--- //|||
+-- gf in a
 utility.format(library, true)
 return library
