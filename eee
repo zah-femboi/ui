@@ -1796,7 +1796,7 @@ function components.keybind(holder, options, zindex)
         mode_button = holder.main:Create("Square", {
             Size = newUDim2(0, 0, 0, 13),
             Position = newUDim2(1, 0, 0, 0),
-            ZIndex = zindex,
+            ZIndex = zindex + 2,
             Theme = "Object Background",
             OutlineTheme = "Object Border"
         })
@@ -1837,11 +1837,11 @@ function components.keybind(holder, options, zindex)
 
         mode_value.Text = mode_label(options.mode)
 
-        local width = mode_value.TextBounds.X + 16
+        local mode_width = mode_value.TextBounds.X + 16
 
         mode_button.Size = newUDim2(
             0,
-            width,
+            mode_width,
             0,
             13
         )
@@ -1849,6 +1849,13 @@ function components.keybind(holder, options, zindex)
         mode_button.Position = newUDim2(
             1,
             5,
+            0,
+            0
+        )
+
+        keybind.Position = newUDim2(
+            1,
+            -(keybind.AbsoluteSize.X + mode_width + 10),
             0,
             0
         )
@@ -1902,10 +1909,12 @@ function components.keybind(holder, options, zindex)
 
             keybind.Position = newUDim2(
                 1,
-                -(value.TextBounds.X + 25 + extra),
+                -(value.TextBounds.X + 25),
                 0,
                 0
             )
+
+            reposition_mode_button()
 
             if holder.plus and holder.minus then
                 holder.plus.Position = newUDim2(1, -(13 + keybind.AbsoluteSize.X), 0, 0)
@@ -1945,6 +1954,9 @@ function components.keybind(holder, options, zindex)
     end
 
     set(options.default)
+    if options.canChangeMode then
+        reposition_mode_button()
+    end
     reposition_mode_button() 
     local binding
     keybind.MouseButton1Click:Connect(function()
@@ -4645,6 +4657,6 @@ function library:Load(options)
     return window_types
 end
 
----ppp
+---bak
 utility.format(library, true)
 return library
