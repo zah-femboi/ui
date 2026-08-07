@@ -1809,6 +1809,12 @@ function components.keybind(holder, options, zindex)
         ZIndex = zindex + 1
     })
 
+
+    if not options.canChangeMode then
+        mode_button.Visible = false
+        mode_value.Visible = false
+    end
+
     local mode_labels = {
         hold = "H",
         toggle = "T"
@@ -1821,7 +1827,6 @@ function components.keybind(holder, options, zindex)
     local function reposition_mode_button()
 
         if not options.canChangeMode then
-            mode_button.Size = newUDim2(0, 0, 0, 13)
             return
         end
 
@@ -2004,6 +2009,7 @@ function components.keybind(holder, options, zindex)
     end)
 
     if options.canChangeMode then
+
         mode_button.MouseButton1Click:Connect(function()
 
             options.mode = options.mode == "hold" and "toggle" or "hold"
@@ -2016,52 +2022,53 @@ function components.keybind(holder, options, zindex)
             reposition_mode_button()
 
         end)
+
     end
 
     library:Connect(services.UserInputService.InputBegan, function(input, gameProcessedEvent)
-    if gameProcessedEvent then
-        return
-    end
-
-    local pressed = input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode or input.UserInputType
-
-    if not binding and pressed == library.flags[options.flag] then
-
-        if options.mode == "hold" then
-
-            library.flags[options.flag .. "_holding"] = true
-
-            if holder.toggle and not holder.toggled then
-                holder.toggle()
-            end
-
-            if not options.listignored and library.keybind_list:Exists(list_name) then
-                library.keybind_list:ChangeObjectTheme(
-                    list_name,
-                    enabled_theme
-                )
-            end
-
-            options.callback(
-                library.flags[options.flag],
-                false,
-                true
-            )
-
-        else
-
-            if holder.toggle then
-                holder.toggle()
-            end
-
-            options.callback(
-                library.flags[options.flag],
-                false,
-                false
-            )
-
+        if gameProcessedEvent then
+            return
         end
-    end
+
+        local pressed = input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode or input.UserInputType
+
+        if not binding and pressed == library.flags[options.flag] then
+
+            if options.mode == "hold" then
+
+                library.flags[options.flag .. "_holding"] = true
+
+                if holder.toggle and not holder.toggled then
+                    holder.toggle()
+                end
+
+                if not options.listignored and library.keybind_list:Exists(list_name) then
+                    library.keybind_list:ChangeObjectTheme(
+                        list_name,
+                        enabled_theme
+                    )
+                end
+
+                options.callback(
+                    library.flags[options.flag],
+                    false,
+                    true
+                )
+
+            else
+
+                if holder.toggle then
+                    holder.toggle()
+                end
+
+                options.callback(
+                    library.flags[options.flag],
+                    false,
+                    false
+                )
+
+            end
+        end
 
     end)
 
@@ -2077,54 +2084,53 @@ function components.keybind(holder, options, zindex)
 
     local released = input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode or input.UserInputType
 
-    if released == library.flags[options.flag] then
+        if released == library.flags[options.flag] then
+            library.flags[options.flag .. "_holding"] = false
 
-        library.flags[options.flag .. "_holding"] = false
+            if holder.toggle and holder.toggled then
+                holder.toggle()
+            end
 
-        if holder.toggle and holder.toggled then
-            holder.toggle()
-        end
+            if not options.listignored and library.keybind_list:Exists(list_name) then
+                library.keybind_list:ChangeObjectTheme(
+                    list_name,
+                    disabled_theme
+                )
+            end
 
-        if not options.listignored and library.keybind_list:Exists(list_name) then
-            library.keybind_list:ChangeObjectTheme(
-                list_name,
-                disabled_theme
+            options.callback(
+                library.flags[options.flag],
+                false,
+                false
             )
+
         end
 
-        options.callback(
-            library.flags[options.flag],
-            false,
-            false
-        )
-
-    end
-
-    end)
+        end)
 
 
-    local keybind_types = {}
+        local keybind_types = {}
 
-    if not options.ignored then
-    library.config_objects[options.flag] = keybind_types
-    end
-
-
-    function keybind_types:Set(key)
-    set(key)
-    end
+        if not options.ignored then
+        library.config_objects[options.flag] = keybind_types
+        end
 
 
-    function keybind_types:SetMode(mode)
-    mode = mode:lower()
+        function keybind_types:Set(key)
+        set(key)
+        end
 
-    options.mode = mode
 
-    holder.keybind_mode = mode
+        function keybind_types:SetMode(mode)
+        mode = mode:lower()
 
-    library.flags[options.flag .. "_mode"] = mode
+        options.mode = mode
 
-    reposition_mode_button()
+        holder.keybind_mode = mode
+
+        library.flags[options.flag .. "_mode"] = mode
+
+        reposition_mode_button()
     end
 
 
@@ -4711,6 +4717,6 @@ function library:Load(options)
     return window_types
 end
 
--- ffffff
+-- //|||
 utility.format(library, true)
 return library
