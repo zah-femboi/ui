@@ -1708,14 +1708,14 @@ for _, enum in next, Enum.KeyCode:GetEnumItems() do
     enums[enum] = true
 end
 
-    function components.keybind(holder, options, zindex)
+function components.keybind(holder, options, zindex)
     zindex = zindex or 11
     utility.format(options)
     utility.defaults(options, {
         ignored = options.noconfig or options.ignoreconfig or options.configignore or false,
         listignored = options.listignore or options.ignorelist or options.nolist or false,
-        mode = "normal",
-        modes = { "normal", "hold", "toggle" }, -- list of modes the button will cycle through
+        mode = "toggle",
+        modes = { "hold", "toggle" },
         blacklist = {},
         risky = holder.risky or false,
         flag = utility.new_flag(),
@@ -1733,8 +1733,6 @@ end
 
     options.mode = options.mode:lower()
 
-    -- if a config was already loaded before this component was created, prefer
-    -- the saved mode over whatever default was passed in
     if library.flags[options.flag .. "_mode"] then
         options.mode = library.flags[options.flag .. "_mode"]
     end
@@ -1783,7 +1781,6 @@ end
         ZIndex = zindex + 1
     })
 
-    -- ===== NEW: mode toggle button =====
     local mode_button = holder.main:Create("Square", {
         Size = newUDim2(0, 0, 0, 13),
         Position = newUDim2(1, 0, 0, 0),
@@ -1805,7 +1802,6 @@ end
     })
 
     local mode_labels = {
-        normal = "N",
         hold = "H",
         toggle = "T"
     }
@@ -1817,9 +1813,13 @@ end
     local function reposition_mode_button()
         mode_value.Text = mode_label(options.mode)
         mode_button.Size = newUDim2(0, mode_value.TextBounds.X + 16, 0, 13)
-        mode_button.Position = newUDim2(1, -(keybind.AbsoluteSize.X + mode_button.AbsoluteSize.X + 4), 0, 0)
+        mode_button.Position = newUDim2(
+            1,
+            keybind.AbsoluteSize.X + 4,
+            0,
+            0
+        )
     end
-    -- ===== END NEW =====
 
     local function set(key)
         if typeof(key) == "string" then
@@ -1890,7 +1890,7 @@ end
                 holder.minus.Position = newUDim2(1, -(29 + keybind.AbsoluteSize.X), 0, 0)
             end
 
-            reposition_mode_button() -- NEW
+            reposition_mode_button() 
 
             holder.key = nil
             library.flags[options.flag .. "_holding"] = true
@@ -1900,8 +1900,7 @@ end
     end
 
     set(options.default)
-    reposition_mode_button() -- NEW: make sure it's positioned correctly on first render
-
+    reposition_mode_button() 
     local binding
     keybind.MouseButton1Click:Connect(function()
         if binding then
@@ -1923,57 +1922,43 @@ end
         end)
     end)
 
-    -- ===== NEW: cycle mode on click =====
     mode_button.MouseButton1Click:Connect(function()
-        local current_index = 1
-        for i, mode in next, options.modes do
-            if mode == options.mode then
-                current_index = i
-                break
-            end
-        end
+        options.mode = options.mode == "hold" and "toggle" or "hold"
 
-        local was_hold = options.mode == "hold"
-        local next_mode = options.modes[(current_index % #options.modes) + 1]
-        options.mode = next_mode
         holder.keybind_mode = options.mode
         library.flags[options.flag .. "_mode"] = options.mode
-
-        if not options.listignored and holder.toggle then
-            if options.mode == "hold" and not was_hold then
-                if library.keybind_list:Exists(list_name) and (not holder.toggle or not holder.toggled) then
-                    library.keybind_list:Remove(list_name)
-                end
-            elseif options.mode ~= "hold" and was_hold then
-                if not library.keybind_list:Exists(list_name) and holder.key then
-                    library.keybind_list:Add(list_name, holder.toggled and enabled_theme or disabled_theme)
-                    library.keybind_list:Change(list_name, ("[%s] %s"):format(holder.key_str, list_name))
-                end
-            end
-        end
-
         library.flags[options.flag .. "_holding"] = false
 
         reposition_mode_button()
     end)
-    -- ===== END NEW =====
-
+    
     library:Connect(services.UserInputService.InputBegan, function(input, gameProcessedEvent)
         if gameProcessedEvent then
             return
         end
 
-        if not binding and (input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode or input.UserInputType) == library.flags[options.flag] then
-            if holder.toggle and options.mode ~= "hold" then
-                holder.toggle()
-            end
+        local pressed = input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode or input.UserInputType
 
-            if options.mode == "hold" and holder.toggled then
-                library.keybind_list:ChangeObjectTheme(list_name, enabled_theme)
+        if not binding and pressed == library.flags[options.flag] then
+            if options.mode == "hold" then
                 library.flags[options.flag .. "_holding"] = true
-            end
 
-            options.callback(library.flags[options.flag], false, options.mode == "hold")
+                if holder.toggle and not holder.toggled then
+                    holder.toggle()
+                end
+
+                if not options.listignored and library.keybind_list:Exists(list_name) then
+                    library.keybind_list:ChangeObjectTheme(list_name, enabled_theme)
+                end
+
+                options.callback(library.flags[options.flag], false, true)
+            else
+                if holder.toggle then
+                    holder.toggle()
+                end
+
+                options.callback(library.flags[options.flag], false, false)
+            end
         end
     end)
 
@@ -1986,12 +1971,19 @@ end
             return
         end
 
-        if (input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode or input.UserInputType) == library.flags[options.flag] then
-            if not holder.toggle or holder.toggled then
+        local released = input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode or input.UserInputType
+
+        if released == library.flags[options.flag] then
+            library.flags[options.flag .. "_holding"] = false
+
+            if holder.toggle and holder.toggled then
+                holder.toggle()
+            end
+
+            if not options.listignored and library.keybind_list:Exists(list_name) then
                 library.keybind_list:ChangeObjectTheme(list_name, disabled_theme)
             end
 
-            library.flags[options.flag .. "_holding"] = false
             options.callback(library.flags[options.flag], false, false)
         end
     end)
@@ -4596,6 +4588,6 @@ function library:Load(options)
     return window_types
 end
 
--- al;
+-- //
 utility.format(library, true)
 return library
