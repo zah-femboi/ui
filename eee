@@ -4101,10 +4101,10 @@ function library:Load(options)
     utility.format(options)
 
     local settings = {
-        title = options.name or "dolphus",
+        title = options.name,
         theme = "Default",
         overrides = {},
-        folder = "dolphus",
+        folder = options.name,
         extension = "json",
         game = "",
         tweenspeed = options.animspeed or 0.1,
@@ -4720,3 +4720,4 @@ end
 
 utility.format(library, true)
 return library
+--oino
