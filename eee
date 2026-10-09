@@ -4131,6 +4131,9 @@ function library:Load(options)
         end
     end
 
+    for i, v in pairs(settings) do
+        options[i] = v
+    end
     utility.defaults(options, settings)
 
     options.font = tostring(options.font):lower()
@@ -4720,4 +4723,3 @@ end
 
 utility.format(library, true)
 return library
---oino
